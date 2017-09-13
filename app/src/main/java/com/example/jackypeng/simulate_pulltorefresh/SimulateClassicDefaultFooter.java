@@ -15,7 +15,7 @@ import android.widget.TextView;
  * Created by jackypeng on 2017/9/11.
  */
 
-public class SimulateClassicDefaultFooter extends FrameLayout implements SimulatePtrUIHandler {
+public class SimulateClassicDefaultFooter extends FrameLayout implements SimulatePtrFooterUIHandler {
 
     private static final String TAG = "SimulateClassicDefaultFooter";
     private TextView title;

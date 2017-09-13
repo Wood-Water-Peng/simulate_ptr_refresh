@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Optional. If you put header and content in xml, you can use these to specify them. -->
+    <declare-styleable name="SimulatePtrLayout">
+        <attr name="ptr_header" format="reference" />
+        <attr name="ptr_content" format="reference" />
+        <attr name="ptr_footer" format="reference" />
+    </declare-styleable>
+</resources>

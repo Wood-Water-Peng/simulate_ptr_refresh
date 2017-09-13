@@ -1,6 +1,7 @@
 package com.example.jackypeng.simulate_pulltorefresh;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.support.annotation.BoolRes;
 import android.support.annotation.Px;
 import android.support.v4.app.NavUtils;
@@ -12,12 +13,18 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Scroller;
 
+import java.util.ArrayList;
+
 /**
  * Created by jackypeng on 2017/9/11.
  */
 
 public class SimulatePtrLayout extends ViewGroup {
     private static final String TAG = "SimulatePtrLayout";
+    private int mHeaderId = 0;
+    private int mContentId = 0;
+    private int mFooterId = 0;
+
     private byte mStatus = PTR_STATUS_INIT;
     // status enum
     public final static byte PTR_STATUS_INIT = 1;
@@ -35,7 +42,8 @@ public class SimulatePtrLayout extends ViewGroup {
     private int touchSlop;
     private SimulatePtrHandler mPtrHandler;
     private boolean mKeepHeaderWhenRefresh;
-    private int mDurationToBackHeader = 2000;
+    private int mDurationToBackHeader = 200;
+    private int mDurationToCloseHeader = 1000;
     private SimulatePtrUIHandler mPtrFooterUIHandler;
     private SimulatePtrUIHandler mPtrHeaderUIHandler;
 
@@ -49,7 +57,12 @@ public class SimulatePtrLayout extends ViewGroup {
 
     public SimulatePtrLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
+        TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.SimulatePtrLayout);
+        if (array != null) {
+            mHeaderId = array.getResourceId(R.styleable.SimulatePtrLayout_ptr_header, mHeaderId);
+            mContentId = array.getResourceId(R.styleable.SimulatePtrLayout_ptr_content, mContentId);
+            mFooterId = array.getResourceId(R.styleable.SimulatePtrLayout_ptr_footer, mFooterId);
+        }
         //必要的初始化操作
         ptrIndicator = new PtrIndicator();
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
@@ -109,6 +122,14 @@ public class SimulatePtrLayout extends ViewGroup {
         return new PtrLayoutParams(getContext(), attrs);
     }
 
+    /**
+     * footerView和headerView必须实现SimulatePtrUIHandler接口
+     * 当header、content、footer同时出现在xml中时，根据类型和顺序进行判断
+     * 大多数情况下 xml总只包含content,header和footer通过set的方式调用
+     * 当childCount为2时,忽略footerView
+     * <p>
+     * 注:该方法只会在xml填充完毕后调用，addView不会调用到该方法
+     */
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
@@ -121,10 +142,12 @@ public class SimulatePtrLayout extends ViewGroup {
             if (mContent == null || mHeaderView == null) {
                 View child1 = getChildAt(0);
                 View child2 = getChildAt(1);
-                if (child1 instanceof SimulatePtrUIHandler) {
+                Log.i(TAG, "child_01:" + getChildAt(0).getClass().getCanonicalName());
+                Log.i(TAG, "child_02:" + getChildAt(1).getClass().getCanonicalName());
+                if (child1 instanceof SimulatePtrHeaderUIHandler) {
                     mHeaderView = child1;
                     mContent = child2;
-                } else if (child2 instanceof SimulatePtrUIHandler) {
+                } else if (child2 instanceof SimulatePtrHeaderUIHandler) {
                     mHeaderView = child2;
                     mContent = child1;
                 }
@@ -133,20 +156,47 @@ public class SimulatePtrLayout extends ViewGroup {
             Log.i(TAG, "child_01:" + getChildAt(0).getClass().getCanonicalName());
             Log.i(TAG, "child_02:" + getChildAt(1).getClass().getCanonicalName());
             Log.i(TAG, "child_03:" + getChildAt(2).getClass().getCanonicalName());
+
             if (mContent == null || mHeaderView == null || mFooterView == null) {
-                View child1 = getChildAt(0);
-                View child2 = getChildAt(1);
-                View child3 = getChildAt(2);
+                final View child1 = getChildAt(0);
+                final View child2 = getChildAt(1);
+                final View child3 = getChildAt(2);
                 //all are not specified
-                if (mContent == null && mHeaderView == null && mFooterView == null) {
-                    mHeaderView = child1;
-                    mContent = child2;
-                    mFooterView = child3;
+
+                ArrayList<View> views = new ArrayList<View>(3) {{
+                    add(child1);
+                    add(child2);
+                    add(child3);
+                }};
+                mHeaderView = getHeaderView(views);
+                mFooterView = getFootView(views);
+                if (views.size() == 1) {
+                    mContent = views.get(0);
                 }
             }
         }
 
 
+    }
+
+    private View getHeaderView(ArrayList<View> views) {
+        for (View v : views) {
+            if (v instanceof SimulatePtrHeaderUIHandler) {
+                views.remove(v);
+                return v;
+            }
+        }
+        return null;
+    }
+
+    private View getFootView(ArrayList<View> views) {
+        for (View v : views) {
+            if (v instanceof SimulatePtrFooterUIHandler) {
+                views.remove(v);
+                return v;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -404,7 +454,7 @@ public class SimulatePtrLayout extends ViewGroup {
     }
 
     private void tryScrollBackToTop() {
-        tryToScrollTo(PtrIndicator.START_POS, mDurationToBackHeader);
+        tryToScrollTo(PtrIndicator.START_POS, mDurationToCloseHeader);
     }
 
     private Scroller mScroller;

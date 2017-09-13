@@ -6,13 +6,14 @@
     android:layout_height="match_parent"
     tools:context="com.example.jackypeng.simulate_pulltorefresh.MainActivity">
 
-    <com.example.jackypeng.simulate_pulltorefresh.SimulateClassicPtrLayout
+    <com.example.jackypeng.simulate_pulltorefresh.SimulateClassicPtrLayout xmlns:simulate_ptr="http://schemas.android.com/apk/res-auto"
         android:id="@+id/ptr_frame_layout"
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:background="@android:color/darker_gray">
 
         <ScrollView
+            android:id="@+id/main_scrllo_view"
             android:layout_width="match_parent"
             android:layout_height="300dp"
             android:background="@android:color/darker_gray">

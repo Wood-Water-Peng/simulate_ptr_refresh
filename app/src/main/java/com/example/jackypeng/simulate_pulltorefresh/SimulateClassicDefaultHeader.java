@@ -14,7 +14,7 @@ import android.widget.TextView;
  * Created by jackypeng on 2017/9/11.
  */
 
-public class SimulateClassicDefaultHeader extends FrameLayout implements SimulatePtrUIHandler {
+public class SimulateClassicDefaultHeader extends FrameLayout implements SimulatePtrHeaderUIHandler {
 
     private TextView title;
 
