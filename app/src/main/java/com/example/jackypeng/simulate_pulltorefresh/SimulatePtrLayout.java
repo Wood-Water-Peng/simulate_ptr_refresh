@@ -300,6 +300,7 @@ public class SimulatePtrLayout extends ViewGroup {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+
         if (!isEnabled() || mContent == null || mHeaderView == null) {
             return super.dispatchTouchEvent(ev);
         }
