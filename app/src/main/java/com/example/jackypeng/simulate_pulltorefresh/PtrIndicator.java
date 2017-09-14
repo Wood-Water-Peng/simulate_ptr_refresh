@@ -22,8 +22,12 @@ public class PtrIndicator {
     private float mFooterHeight;
     private float mHeaderheight;
     private boolean isHeader = false;
+    private boolean mIsUnderTouch = false;
+    private int mPressPos;
 
     public void onPressDown(float x, float y) {
+        mIsUnderTouch = true;
+        mPressPos = mCurPosition;
         mLastMove.set(x, y);
     }
 
@@ -34,6 +38,9 @@ public class PtrIndicator {
         mLastMove.set(x, y);
     }
 
+    public void onRelease() {
+        mIsUnderTouch = false;
+    }
 
     public void setRatioOfHeaderHeightToRefresh(float ratio) {
         mRatioOfHeaderHeightToRefresh = ratio;
@@ -49,7 +56,14 @@ public class PtrIndicator {
 
     private void processOnMove(float offsetX, float offsetY) {
         mOffsetX = offsetX;
-        mOffsetY = offsetY / mResistanceHeader;
+        float cur_resist;
+        if (isOverOffsetToRefresh()) {
+            //可采用某种数学公式---根据距离动态的改变阻力
+//            cur_resist = (float) (mResistanceHeader * Math.log(getCurPositionY() - getOffsetToRefresh()));
+        } else {
+        }
+        cur_resist = mResistanceHeader;
+        mOffsetY = offsetY / cur_resist;
     }
 
     public float getOffsetX() {
@@ -68,6 +82,7 @@ public class PtrIndicator {
         return mCurPosition > START_POS;
     }
 
+    //记录了滑动的距离，刷新-->大于0   加载-->小与0
     public int getCurPositionY() {
         return mCurPosition;
     }
@@ -119,5 +134,21 @@ public class PtrIndicator {
 
     public int getLastPosY() {
         return mLastPos;
+    }
+
+    public boolean isUnderTouch() {
+        return mIsUnderTouch;
+    }
+
+    public boolean hasBackToStartPosition() {
+        return mLastPos != START_POS && isInStartPosition();
+    }
+
+    public boolean hasMovedAfterPressedDown() {
+        return mCurPosition != mPressPos;
+    }
+
+    public boolean willOverTop(int to) {
+        return to < START_POS;
     }
 }

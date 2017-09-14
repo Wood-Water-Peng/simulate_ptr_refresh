@@ -31,17 +31,9 @@ public class SimulateClassicPtrLayout extends SimulatePtrLayout {
         /**
          * addView不会导致onFinishInflate方法的调用
          */
+        mClassicHeader.setLastUpdateTimeRelateObject(this);
         setHeaderView(mClassicHeader);
         setFooterView(mClassicFooter);
-
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                /**
-                 * 这么写暂时为了准备的判断出子孩子的类型
-                 */
-            }
-        }, 1000);
         addPtrHeaderUIHandler(mClassicHeader);
         addPtrFooterUIHandler(mClassicFooter);
     }

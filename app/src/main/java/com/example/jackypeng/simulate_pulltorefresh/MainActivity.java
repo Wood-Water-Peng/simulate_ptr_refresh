@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         classicPtrLayout.notifyUIRefreshComplete();
                     }
-                }, 1000);
+                }, 3000);
             }
         });
     }

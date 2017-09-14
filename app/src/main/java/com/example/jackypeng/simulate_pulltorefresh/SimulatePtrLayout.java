@@ -297,6 +297,7 @@ public class SimulatePtrLayout extends ViewGroup {
 
     }
 
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (!isEnabled() || mContent == null || mHeaderView == null) {
@@ -306,6 +307,7 @@ public class SimulatePtrLayout extends ViewGroup {
         switch (action) {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                ptrIndicator.onRelease();
                 if (ptrIndicator.hasLeftStartPosition()) {
                     onRelease();
                 } else {
@@ -351,12 +353,12 @@ public class SimulatePtrLayout extends ViewGroup {
                  */
                 boolean canFooterMoveUp = (mPtrHandler != null && mFooterView != null && !PtrHelper.canScrollUp(mContent));
 
-                Log.i(TAG, "canHeaderMoveDown:" + canHeaderMoveDown);
-                Log.i(TAG, "canFooterMoveUp:" + canFooterMoveUp);
+//                Log.i(TAG, "canHeaderMoveDown:" + canHeaderMoveDown);
+//                Log.i(TAG, "canFooterMoveUp:" + canFooterMoveUp);
 
                 //header和footer都没有显示出来
                 if (!canMoveUp && !canMoveDown) {
-                    Log.i(TAG, "header和footer都没有显示出来");
+//                    Log.i(TAG, "header和footer都没有显示出来");
                     //先判断content能否滑动,如ListView,ScrollView
                     if (moveDown && !canHeaderMoveDown) {
                         return super.dispatchTouchEvent(ev);
@@ -366,13 +368,13 @@ public class SimulatePtrLayout extends ViewGroup {
                     }
 //                    向下滑动，那么应该显示头部
                     if (moveDown) {
-                        Log.i(TAG, "---moveDown---");
+//                        Log.i(TAG, "---moveDown---");
                         moveHeaderPos(offsetY);
                         return true;
                     }
 //                    向上滑动,那么应该拉出footer
                     if (moveUp) {
-                        Log.i(TAG, "---moveUp---");
+//                        Log.i(TAG, "---moveUp---");
                         moveFooterPos(offsetY);
                         return true;
                     }
@@ -380,12 +382,12 @@ public class SimulatePtrLayout extends ViewGroup {
                 //if header is showing,then no need to move footer
 //                Log.i(TAG, "offsetY:" + offsetY);
                 if (canMoveUp) {    //头部显示了一部分,且可以向上滑动
-                    Log.i(TAG, "header滑动");
+//                    Log.i(TAG, "header滑动");
                     moveHeaderPos(offsetY);
                     return true;
                 }
                 if (canMoveDown) {
-                    Log.i(TAG, "footer滑动");
+//                    Log.i(TAG, "footer滑动");
                     moveFooterPos(offsetY);
                     return true;
                 }
@@ -416,7 +418,7 @@ public class SimulatePtrLayout extends ViewGroup {
              */
             if (ptrIndicator.isInStartPosition()) {
 //                Log.i(TAG, "---滑动结束---");
-                setEnabled(true);  //在滑动过程中该控件不响应任何的触摸事件
+//                setEnabled(true);  //在滑动过程中该控件不响应任何的触摸事件
 //                Log.i(TAG, "curScrollY:" + getScrollY());
                 if (ptrIndicator.isInStartPosition()) {
                     tryToNotifyReset();
@@ -429,6 +431,7 @@ public class SimulatePtrLayout extends ViewGroup {
      * 刷新完毕
      */
     public void notifyUIRefreshComplete() {
+        mStatus = PTR_STATUS_COMPLETE;
         tryScrollToBackAfterComplete();
         if (ptrIndicator.isHeader()) {
             if (mPtrHeaderUIHandler != null) {
@@ -444,9 +447,12 @@ public class SimulatePtrLayout extends ViewGroup {
 
     private void tryToNotifyReset() {
         mStatus = PTR_STATUS_INIT;
-//        if (mPtrUIHandler != null) {
-//            mPtrUIHandler.onUIReset(this);
-//        }
+        if (mPtrHeaderUIHandler != null) {
+            mPtrHeaderUIHandler.onUIReset(this);
+        }
+        if (mPtrFooterUIHandler != null) {
+            mPtrFooterUIHandler.onUIReset(this);
+        }
     }
 
     private void tryScrollToBackAfterComplete() {
@@ -454,7 +460,9 @@ public class SimulatePtrLayout extends ViewGroup {
     }
 
     private void tryScrollBackToTop() {
-        tryToScrollTo(PtrIndicator.START_POS, mDurationToCloseHeader);
+        if (!ptrIndicator.isUnderTouch() && ptrIndicator.hasLeftStartPosition()) {
+            tryToScrollTo(PtrIndicator.START_POS, mDurationToCloseHeader);
+        }
     }
 
     private Scroller mScroller;
@@ -464,6 +472,7 @@ public class SimulatePtrLayout extends ViewGroup {
          * headView可能的几种状态
          * 1.准备刷新
          * 2.正在刷新
+         * 3.刷新完成
          */
         Log.i(TAG, "onRelease");
 
@@ -478,12 +487,14 @@ public class SimulatePtrLayout extends ViewGroup {
             if (mKeepHeaderWhenRefresh) {
                 if (ptrIndicator.isHeader()) {
                     //scrollTo
-//                    tryToScrollTo(ptrIndicator.getOffsetToKeepHeaderWhileLoading(), mDurationToBackHeader);
+//                  tryToScrollTo(ptrIndicator.getOffsetToKeepHeaderWhileLoading(), mDurationToBackHeader);
                 }
             }
         } else {
             if (mStatus == PTR_STATUS_PREPARE) {
                 tryScrollBackToTopAbortRefresh();
+            } else if (mStatus == PTR_STATUS_COMPLETE) {
+                notifyUIRefreshComplete();
             }
         }
     }
@@ -497,7 +508,7 @@ public class SimulatePtrLayout extends ViewGroup {
      * @param mDurationToBackHeader          滑动的时间
      */
     private void tryToScrollTo(int offsetToKeepHeaderWhileLoading, int mDurationToBackHeader) {
-        setEnabled(false);
+//        setEnabled(false);
         Log.i(TAG, "start:" + ptrIndicator.getCurPositionY());
         Log.i(TAG, "end:" + offsetToKeepHeaderWhileLoading);
         Log.i(TAG, "dis:" + (offsetToKeepHeaderWhileLoading - ptrIndicator.getCurPositionY()));
@@ -538,48 +549,7 @@ public class SimulatePtrLayout extends ViewGroup {
 
     private void moveFooterPos(float offsetY) {
         ptrIndicator.setIsHeader(false);
-        movePos(offsetY);
-    }
-
-    private void movePos(float offsetY) {
-        /**
-         * 确保ptrIndicator中保存的都是正整数
-         */
-//        Log.i(TAG, "offsetY:" + offsetY);
-        if (ptrIndicator.isHeader()) {
-            ptrIndicator.setCurPosition(ptrIndicator.getCurPositionY() + (int) offsetY);
-        } else {
-            ptrIndicator.setCurPosition(ptrIndicator.getCurPositionY() - (int) offsetY);
-        }
-
-        //更新状态   init--->prepare
-        if (ptrIndicator.hasJustLeftStartPosition() && mStatus == PTR_STATUS_INIT) {
-            mStatus = PTR_STATUS_PREPARE;
-            //通知界面进行改变
-//            mPtrUIHandler.onUIRefreshBegin(this);
-        }
-        //更新状态   prepare--->loading
-        if (mStatus == PTR_STATUS_PREPARE) {
-//            tryToPerformRefresh();
-        }
-        scrollBy(0, -(int) offsetY);
-//        if (ptrIndicator.isHeader()) {
-//        } else {
-//            scrollBy(0, (int) offsetY);
-//        }
-
-//        Log.i(TAG, "curY:" + ptrIndicator.getCurPositionY());
-//        Log.i(TAG, "lastY:" + ptrIndicator.getLastPosY());
-//        Log.i(TAG, "offsetToRefresh:" + ptrIndicator.getOffsetToRefresh());
-        if (ptrIndicator.isHeader()) {
-            if (mPtrHeaderUIHandler != null) {
-                mPtrHeaderUIHandler.onUIPositionChange(this, true, mStatus, ptrIndicator);
-            }
-        } else {
-            if (mPtrFooterUIHandler != null) {
-                mPtrFooterUIHandler.onUIPositionChange(this, true, mStatus, ptrIndicator);
-            }
-        }
+        movePos(-offsetY);
     }
 
     private void moveHeaderPos(float offsetY) {
@@ -593,4 +563,101 @@ public class SimulatePtrLayout extends ViewGroup {
         movePos(offsetY);
 
     }
+
+    private void movePos(float offsetY) {
+
+        if (offsetY < 0 && ptrIndicator.isInStartPosition()) {
+//            Log.i(TAG, "从下到上滑动到顶部");
+//            return;
+        }
+        /**
+         *计算出这次滑动的目的地,与手势相关
+         * 上滑    offset  <0
+         * 下滑    offset  >0
+         * 刷新    距离是先>0，后=0
+         * 加载    先<0,后=0
+         */
+
+        int to = ptrIndicator.getCurPositionY() + (int) offsetY;
+        Log.i(TAG, "to:" + to);
+        if (ptrIndicator.willOverTop(to)) {
+            to = PtrIndicator.START_POS;
+        }
+        /**
+         * 确保ptrIndicator中保存的都是正整数
+         */
+//        Log.i(TAG, "offsetY:" + offsetY);
+        ptrIndicator.setCurPosition(to);
+//        if (ptrIndicator.isHeader()) {
+//        } else {
+//            ptrIndicator.setCurPosition(ptrIndicator.getCurPositionY() - (int) offsetY);
+//        }
+        //这一步实际上是一个转换，将参数全部用Indicator中保存的衡量，不然会有小的误差
+        int change = to - ptrIndicator.getLastPosY();
+        updatePos(ptrIndicator.isHeader() ? -change : change);
+    }
+
+    //此时的change是精确的滑动距离
+    private void updatePos(int change) {
+
+        if (change == 0) {
+            return;
+        }
+
+        //back to initiated position
+        if (ptrIndicator.hasBackToStartPosition()) {
+            tryToNotifyReset();
+            if (ptrIndicator.isUnderTouch()) {
+//                sendDownEvent();
+            }
+        }
+
+        //once moved,cancel event will to sent to child
+        if (ptrIndicator.isUnderTouch() && ptrIndicator.hasMovedAfterPressedDown()) {
+//            sendCancelEvent();
+        }
+
+        //更新状态   init--->prepare
+        if (ptrIndicator.hasJustLeftStartPosition() && mStatus == PTR_STATUS_INIT) {
+            mStatus = PTR_STATUS_PREPARE;
+            //通知界面进行改变
+//            mPtrUIHandler.onUIRefreshBegin(this);
+            if (ptrIndicator.isHeader()) {
+                if (mPtrHeaderUIHandler != null) {
+                    mPtrHeaderUIHandler.onUIRefreshPrepare(this);
+                }
+            } else {
+                if (mPtrFooterUIHandler != null) {
+                    mPtrFooterUIHandler.onUIRefreshPrepare(this);
+                }
+            }
+        }
+        //更新状态   prepare--->loading
+        if (mStatus == PTR_STATUS_PREPARE) {
+//            tryToPerformRefresh();
+        }
+        scrollBy(0, change);
+
+        if (ptrIndicator.isHeader()) {
+            if (mPtrHeaderUIHandler != null) {
+                mPtrHeaderUIHandler.onUIPositionChange(this, true, mStatus, ptrIndicator);
+            }
+        } else {
+            if (mPtrFooterUIHandler != null) {
+                mPtrFooterUIHandler.onUIPositionChange(this, true, mStatus, ptrIndicator);
+            }
+        }
+    }
+
+    private void sendCancelEvent() {
+        MotionEvent event = MotionEvent.obtain(mLastMoveEvent.getDownTime(), mLastMoveEvent.getEventTime(), MotionEvent.ACTION_CANCEL, mLastMoveEvent.getX(), mLastMoveEvent.getY(), mLastMoveEvent.getMetaState());
+        super.dispatchTouchEvent(event);
+    }
+
+    private void sendDownEvent() {
+        MotionEvent event = MotionEvent.obtain(mLastMoveEvent.getDownTime(), mLastMoveEvent.getEventTime(), MotionEvent.ACTION_DOWN, mLastMoveEvent.getX(), mLastMoveEvent.getY(), mLastMoveEvent.getMetaState());
+        super.dispatchTouchEvent(event);
+    }
+
+
 }
